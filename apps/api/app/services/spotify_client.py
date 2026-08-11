@@ -36,7 +36,7 @@ class SpotifyClient:
         self._token_expires_at = time.monotonic() + payload["expires_in"]
         return self._token
 
-    async def search_tracks(self, query: str, limit: int = 15) -> list[dict]:
+    async def search_tracks(self, query: str, limit: int = 10) -> list[dict]:
         async with httpx.AsyncClient(timeout=10) as client:
             token = await self._get_token(client)
             resp = await client.get(
