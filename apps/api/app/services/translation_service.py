@@ -16,8 +16,9 @@ from app.config import get_settings
 MODEL = "claude-sonnet-4-5"
 
 
-class TranslationMismatchError(Exception):
-    pass
+class TranslationError(Exception):
+    """Raised for both API-level failures (auth, billing, rate limits) and
+    cases where the model didn't return a usable line-for-line translation."""
 
 
 SYSTEM_PROMPT = """You translate song lyrics for a karaoke app. You will be given a JSON \
@@ -40,12 +41,18 @@ class TranslationService:
         client = self._get_client()
 
         for attempt in range(2):
-            message = client.messages.create(
-                model=MODEL,
-                max_tokens=4096,
-                system=SYSTEM_PROMPT.format(target_language=target_language),
-                messages=[{"role": "user", "content": json.dumps(lines, ensure_ascii=False)}],
-            )
+            try:
+                message = client.messages.create(
+                    model=MODEL,
+                    max_tokens=4096,
+                    system=SYSTEM_PROMPT.format(target_language=target_language),
+                    messages=[{"role": "user", "content": json.dumps(lines, ensure_ascii=False)}],
+                )
+            except anthropic.APIError as exc:
+                # Auth/billing/rate-limit failures won't be fixed by retrying —
+                # surface immediately with Anthropic's own message.
+                raise TranslationError(f"Anthropic API error: {exc}") from exc
+
             raw = message.content[0].text.strip()
 
             try:
@@ -56,9 +63,7 @@ class TranslationService:
             if isinstance(translated, list) and len(translated) == len(lines):
                 return [str(line) for line in translated]
 
-        raise TranslationMismatchError(
-            f"could not get a {len(lines)}-line translation after retry"
-        )
+        raise TranslationError(f"could not get a {len(lines)}-line translation after retry")
 
 
 translation_service = TranslationService()

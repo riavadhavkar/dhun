@@ -8,7 +8,7 @@ from app.models import Song, Translation
 from app.schemas import Language, LyricLine, LyricsResponse, TrackSearchResult
 from app.services.lrclib_client import NoSyncedLyricsError, lrclib_client
 from app.services.spotify_client import spotify_client
-from app.services.translation_service import TranslationMismatchError, translation_service
+from app.services.translation_service import TranslationError, translation_service
 
 router = APIRouter(prefix="/api", tags=["songs"])
 
@@ -69,7 +69,7 @@ async def get_lyrics(
             translated_texts = translation_service.translate_lines(
                 original_texts, LANGUAGE_NAMES_BY_CODE[lang]
             )
-        except TranslationMismatchError as exc:
+        except TranslationError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
         translation = Translation(
