@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and fill in, OR pass everything via TF_VAR_* env
+# vars so secrets never touch disk. terraform.tfvars is gitignored either way.
+
+aws_region   = "us-east-1"
+project_name = "dhun"
+environment  = "dev"
+
+# Secrets below — prefer TF_VAR_db_master_password etc. over putting these
+# in a file at all.
+# db_master_password     = ""
+# spotify_client_id      = ""
+# spotify_client_secret  = ""
+# anthropic_api_key      = ""
+# nextauth_secret        = ""
