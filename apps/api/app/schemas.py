@@ -10,17 +10,26 @@ class TrackSearchResult(BaseModel):
     duration_ms: int
 
 
-class LyricLine(BaseModel):
+class OriginalLyricLine(BaseModel):
     start_ms: int
-    original: str
+    text: str
+
+
+class OriginalLyricsResponse(BaseModel):
+    track_id: str
+    lines: list[OriginalLyricLine]
+
+
+class TranslationLine(BaseModel):
+    start_ms: int
     pronunciation: str
-    translated: str
+    translation: str
 
 
-class LyricsResponse(BaseModel):
+class TranslationResponse(BaseModel):
     track_id: str
     language: str
-    lines: list[LyricLine]
+    lines: list[TranslationLine]
 
 
 class Language(BaseModel):

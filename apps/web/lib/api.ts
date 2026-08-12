@@ -1,4 +1,4 @@
-import type { Language, LyricsResponse, TrackSearchResult } from "./types";
+import type { Language, OriginalLyricsResponse, TrackSearchResult, TranslationResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -19,8 +19,12 @@ export function getTrack(trackId: string): Promise<TrackSearchResult> {
   return fetchJson(`/api/songs/${trackId}`);
 }
 
-export function getLyrics(trackId: string, lang: string): Promise<LyricsResponse> {
-  return fetchJson(`/api/songs/${trackId}/lyrics?lang=${encodeURIComponent(lang)}`);
+export function getOriginalLyrics(trackId: string): Promise<OriginalLyricsResponse> {
+  return fetchJson(`/api/songs/${trackId}/lyrics`);
+}
+
+export function getTranslation(trackId: string, lang: string): Promise<TranslationResponse> {
+  return fetchJson(`/api/songs/${trackId}/translation?lang=${encodeURIComponent(lang)}`);
 }
 
 export function getLanguages(): Promise<Language[]> {

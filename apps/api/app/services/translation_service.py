@@ -1,6 +1,6 @@
 """Batched lyric translation + transliteration via Claude.
 
-Processing the whole song in one call (rather than line-by-line) gives the
+Processing lyrics in chunks (rather than strictly line-by-line) gives the
 model surrounding context, which matters a lot for song lyrics — literal
 word-for-word translation often reads badly. For each line the model returns
 two things: a phonetic transliteration (how the original line sounds,
@@ -8,8 +8,15 @@ written in the target language's own script) and a natural-meaning
 translation. The model is instructed to return one JSON object per input
 line, in order, so results can be zipped back against the original
 timestamps.
+
+Songs longer than CHUNK_SIZE lines are split into chunks translated
+concurrently (asyncio.gather + the async Anthropic client) rather than one
+big sequential call — genuinely cuts wall-clock latency for long songs, at
+the cost of each chunk only having its own lines as context rather than the
+whole song (a chunk boundary can occasionally split a verse's continuity).
 """
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -22,10 +29,11 @@ logger = logging.getLogger(__name__)
 
 MODEL = "claude-sonnet-4-5"
 MAX_ATTEMPTS = 3
+CHUNK_SIZE = 20
 # Each line now returns two fields (pronunciation + translation) instead of
 # one, roughly doubling output size versus a plain translation — 4096 was
-# enough for single-field output but truncated mid-JSON on longer songs here.
-MAX_OUTPUT_TOKENS = 8192
+# enough for single-field output but truncated mid-JSON on longer chunks.
+MAX_OUTPUT_TOKENS = 4096
 
 # Substrings identifying failures that retrying the same request won't fix —
 # everything else (rate limits, transient content-filter false positives,
@@ -73,20 +81,35 @@ def _strip_code_fence(text: str) -> str:
 
 class TranslationService:
     def __init__(self) -> None:
-        self._client: anthropic.Anthropic | None = None
+        self._client: anthropic.AsyncAnthropic | None = None
 
-    def _get_client(self) -> anthropic.Anthropic:
+    def _get_client(self) -> anthropic.AsyncAnthropic:
         if self._client is None:
-            self._client = anthropic.Anthropic(api_key=get_settings().anthropic_api_key)
+            self._client = anthropic.AsyncAnthropic(api_key=get_settings().anthropic_api_key)
         return self._client
 
-    def translate_lines(self, lines: list[str], target_language: str) -> list[TranslatedLine]:
+    async def translate_lines(self, lines: list[str], target_language: str) -> list[TranslatedLine]:
+        if len(lines) <= CHUNK_SIZE:
+            return await self._translate_chunk(lines, target_language, chunk_label="1/1")
+
+        chunks = [lines[i : i + CHUNK_SIZE] for i in range(0, len(lines), CHUNK_SIZE)]
+        results = await asyncio.gather(
+            *(
+                self._translate_chunk(chunk, target_language, chunk_label=f"{i + 1}/{len(chunks)}")
+                for i, chunk in enumerate(chunks)
+            )
+        )
+        return [line for chunk_result in results for line in chunk_result]
+
+    async def _translate_chunk(
+        self, lines: list[str], target_language: str, chunk_label: str
+    ) -> list[TranslatedLine]:
         client = self._get_client()
         last_error: str | None = None
 
         for attempt in range(MAX_ATTEMPTS):
             try:
-                message = client.messages.create(
+                message = await client.messages.create(
                     model=MODEL,
                     max_tokens=MAX_OUTPUT_TOKENS,
                     system=SYSTEM_PROMPT.format(target_language=target_language),
@@ -112,7 +135,8 @@ class TranslationService:
                 else:
                     last_error = f"model did not return valid JSON (stop_reason={message.stop_reason})"
                 logger.warning(
-                    "translate_lines: JSON parse failed on attempt %d/%d (%s). Raw response (first 500 chars): %r",
+                    "translate_lines chunk %s: JSON parse failed on attempt %d/%d (%s). Raw response (first 500 chars): %r",
+                    chunk_label,
                     attempt + 1,
                     MAX_ATTEMPTS,
                     last_error,
@@ -126,7 +150,8 @@ class TranslationService:
 
             last_error = f"expected {len(lines)} {{pronunciation, translation}} objects, got malformed output"
             logger.warning(
-                "translate_lines: shape mismatch on attempt %d/%d. Raw response (first 500 chars): %r",
+                "translate_lines chunk %s: shape mismatch on attempt %d/%d. Raw response (first 500 chars): %r",
+                chunk_label,
                 attempt + 1,
                 MAX_ATTEMPTS,
                 raw[:500],
@@ -138,7 +163,7 @@ class TranslationService:
             "produce a usable result. This can happen with songs that have unusual lyric formatting "
             "(heavy repetition, non-lyrical markers like [Instrumental], mixed-language lines) or "
             "from a temporary hiccup with the translation service. Try again, or try a different "
-            f"target language. (debug: {last_error})"
+            f"target language. (debug: chunk {chunk_label}, {last_error})"
         )
 
     @staticmethod

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LyricsView } from "@/components/LyricsView";
@@ -9,12 +9,13 @@ import { PlayButton } from "@/components/PlayButton";
 import { RecordPlayer } from "@/components/RecordPlayer";
 import { SearchResultsOverlay } from "@/components/SearchResultsOverlay";
 import { SeekBar } from "@/components/SeekBar";
-import { useLyrics } from "@/hooks/useLyrics";
+import { useOriginalLyrics } from "@/hooks/useOriginalLyrics";
 import { usePreferredLanguage } from "@/hooks/usePreferredLanguage";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSearch } from "@/hooks/useSearch";
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
-import type { TrackSearchResult } from "@/lib/types";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { LyricLine, TrackSearchResult } from "@/lib/types";
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
@@ -27,10 +28,29 @@ export default function HomePage() {
   const [reducedMotion, setReducedMotion] = useReducedMotion();
   const player = useSpotifyPlayer();
 
-  const { data: lyrics, isLoading: lyricsLoading, error: lyricsError } = useLyrics(
-    selectedTrack?.id ?? null,
-    language
-  );
+  // Fetched independently — original lyrics are fast (no LLM call involved)
+  // and render immediately; translation is slower and fills in a moment
+  // later rather than blocking the whole view.
+  const {
+    data: originalLyrics,
+    isLoading: originalLoading,
+    error: originalError,
+  } = useOriginalLyrics(selectedTrack?.id ?? null);
+  const {
+    data: translation,
+    isLoading: translationLoading,
+    error: translationError,
+  } = useTranslation(selectedTrack?.id ?? null, language);
+
+  const mergedLines: LyricLine[] | null = useMemo(() => {
+    if (!originalLyrics) return null;
+    return originalLyrics.lines.map((line, i) => ({
+      start_ms: line.start_ms,
+      original: line.text,
+      pronunciation: translation?.lines[i]?.pronunciation ?? null,
+      translated: translation?.lines[i]?.translation ?? null,
+    }));
+  }, [originalLyrics, translation]);
 
   const isLoaded = selectedTrack !== null && loadedTrackId === selectedTrack.id;
 
@@ -143,10 +163,22 @@ export default function HomePage() {
               Search for a song to get started.
             </p>
           )}
-          {selectedTrack && lyricsLoading && <p style={{ color: "var(--text-dim)" }}>Loading lyrics…</p>}
-          {selectedTrack && lyricsError && <p style={{ color: "#f87171" }}>{lyricsError.message}</p>}
-          {selectedTrack && lyrics && (
-            <LyricsView lines={lyrics.lines} positionMs={player.positionMs} onSeek={handleSeek} />
+          {selectedTrack && originalLoading && <p style={{ color: "var(--text-dim)" }}>Loading lyrics…</p>}
+          {selectedTrack && originalError && <p style={{ color: "#f87171" }}>{originalError.message}</p>}
+          {selectedTrack && mergedLines && (
+            <>
+              {translationLoading && (
+                <p style={{ color: "var(--text-dim)", fontSize: "0.85rem", marginBottom: "var(--space-sm)" }}>
+                  Translating…
+                </p>
+              )}
+              {translationError && (
+                <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "var(--space-sm)" }}>
+                  {translationError.message}
+                </p>
+              )}
+              <LyricsView lines={mergedLines} positionMs={player.positionMs} onSeek={handleSeek} />
+            </>
           )}
         </div>
       </div>
