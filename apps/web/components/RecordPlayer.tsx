@@ -72,7 +72,8 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           height: size,
           borderRadius: "50%",
           background:
-            "repeating-radial-gradient(circle, var(--vinyl-black) 0px, var(--vinyl-black) 3px, var(--vinyl-groove) 4px)",
+            "repeating-radial-gradient(circle, var(--vinyl-groove) 0px, var(--vinyl-groove) 1px, transparent 2px, transparent 5px), " +
+            "radial-gradient(circle at 38% 32%, var(--vinyl-highlight) 0%, var(--vinyl-mid) 45%, var(--vinyl-dark) 100%)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
         }}
       >
@@ -90,7 +91,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
               height: size,
               borderRadius: "50%",
               overflow: "hidden",
-              background: "var(--surface)",
+              background: track.album_art ? "var(--surface)" : "var(--label-gold)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -104,7 +105,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
-              <span style={{ fontSize: size * 0.1, color: "var(--text-dim)", fontWeight: 700 }}>dhun</span>
+              <span style={{ fontSize: size * 0.1, color: "var(--vinyl-dark)", fontWeight: 700 }}>dhun</span>
             )}
           </motion.div>
         )}
@@ -134,7 +135,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           position: "absolute",
           top: 0,
           right: size * 0.08,
-          width: 6,
+          width: 4,
           height: size * 0.55,
           borderRadius: "var(--radius-full)",
           background: "var(--tonearm-metal)",
@@ -145,10 +146,10 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
         <div
           style={{
             position: "absolute",
-            top: -4,
-            left: -5,
-            width: 16,
-            height: 16,
+            top: -5,
+            left: -6,
+            width: 14,
+            height: 14,
             borderRadius: "50%",
             background: "var(--tonearm-metal)",
           }}
