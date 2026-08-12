@@ -1,18 +1,73 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { LyricsView } from "@/components/LyricsView";
+import { MotionToggle } from "@/components/MotionToggle";
+import { PlayButton } from "@/components/PlayButton";
+import { RecordPlayer } from "@/components/RecordPlayer";
+import { SearchResultsOverlay } from "@/components/SearchResultsOverlay";
+import { SeekBar } from "@/components/SeekBar";
+import { useLyrics } from "@/hooks/useLyrics";
+import { usePreferredLanguage } from "@/hooks/usePreferredLanguage";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSearch } from "@/hooks/useSearch";
+import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
+import type { TrackSearchResult } from "@/lib/types";
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
-  const { data: results, isFetching, error } = useSearch(query);
+  const { data: results, isFetching, error: searchError } = useSearch(query);
+
+  const [selectedTrack, setSelectedTrack] = useState<TrackSearchResult | null>(null);
+  const [loadedTrackId, setLoadedTrackId] = useState<string | null>(null);
+
+  const [language, setLanguage] = usePreferredLanguage();
+  const [reducedMotion, setReducedMotion] = useReducedMotion();
+  const player = useSpotifyPlayer();
+
+  const { data: lyrics, isLoading: lyricsLoading, error: lyricsError } = useLyrics(
+    selectedTrack?.id ?? null,
+    language
+  );
+
+  const isLoaded = selectedTrack !== null && loadedTrackId === selectedTrack.id;
+
+  const beginPlayback = (trackId: string, positionMs?: number) => {
+    player.activateElement();
+    setLoadedTrackId(trackId);
+    player.playTrack(trackId, positionMs);
+  };
+
+  const handleSelectTrack = (track: TrackSearchResult) => {
+    setSelectedTrack(track);
+    setQuery(""); // closes the results overlay, which is what lets the shared
+    // layoutId flight animation actually run (the "from" element unmounts
+    // and the "to" element mounts in the same commit)
+    if (player.isAuthenticated && player.isReady) {
+      beginPlayback(track.id);
+    }
+  };
+
+  const handleSeek = (ms: number) => {
+    if (!selectedTrack) return;
+    if (isLoaded) {
+      player.seek(ms);
+    } else {
+      beginPlayback(selectedTrack.id, ms);
+    }
+  };
 
   return (
-    <main>
-      <h1 style={{ fontSize: "1.75rem", marginBottom: "1.5rem" }}>dhun</h1>
+    <main className="dhun-main">
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)", marginBottom: "0.5rem" }}>
+        <h1 style={{ fontSize: "1.75rem", margin: 0 }}>dhun</h1>
+        <div style={{ marginLeft: "auto" }}>
+          <MotionToggle reducedMotion={reducedMotion} onChange={setReducedMotion} />
+        </div>
+      </div>
+
       <input
         type="text"
         placeholder="Search for a song..."
@@ -21,52 +76,80 @@ export default function HomePage() {
         style={{
           width: "100%",
           padding: "0.75rem 1rem",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-md)",
           border: "1px solid var(--border)",
           background: "var(--surface)",
           color: "var(--text)",
         }}
       />
 
-      {isFetching && <p style={{ color: "var(--text-dim)", marginTop: "1rem" }}>Searching…</p>}
-      {error && (
-        <p style={{ color: "#f87171", marginTop: "1rem" }}>
-          Couldn&apos;t reach the search service. Is the backend running?
-        </p>
+      {query.trim().length > 0 && (
+        <SearchResultsOverlay
+          results={results ?? []}
+          isFetching={isFetching}
+          error={searchError}
+          onSelect={handleSelectTrack}
+        />
       )}
 
-      <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem" }}>
-        {results?.map((track) => (
-          <li key={track.id}>
-            <Link
-              href={`/song/${track.id}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                padding: "0.6rem 0.5rem",
-                borderRadius: "8px",
-              }}
-            >
-              {track.album_art ? (
-                <Image
-                  src={track.album_art}
-                  alt={track.album}
-                  width={48}
-                  height={48}
-                  style={{ borderRadius: "4px" }}
-                />
-              ) : (
-                <div style={{ width: 48, height: 48, background: "var(--surface)", borderRadius: 4 }} />
-              )}
-              <div>
-                <div>{track.name}</div>
-                <div style={{ color: "var(--text-dim)", fontSize: "0.875rem" }}>{track.artist}</div>
+      <div className="dhun-columns" style={{ marginTop: "var(--space-xl)" }}>
+        <div className="dhun-col-left">
+          <RecordPlayer
+            track={selectedTrack}
+            isPlaying={isLoaded && !player.isPaused}
+            reducedMotion={reducedMotion}
+          />
+
+          {selectedTrack && (
+            <div style={{ marginTop: "var(--space-lg)" }}>
+              <div style={{ textAlign: "center", marginBottom: "var(--space-md)" }}>
+                <div style={{ fontWeight: 600 }}>{selectedTrack.name}</div>
+                <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>{selectedTrack.artist}</div>
               </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "var(--space-md)",
+                  marginBottom: "var(--space-md)",
+                }}
+              >
+                <PlayButton
+                  spotifyTrackId={selectedTrack.id}
+                  player={player}
+                  started={isLoaded}
+                  onStarted={() => setLoadedTrackId(selectedTrack.id)}
+                />
+                <LanguageSelector value={language} onChange={setLanguage} />
+              </div>
+
+              {player.isAuthenticated && (
+                <SeekBar
+                  positionMs={player.positionMs}
+                  durationMs={selectedTrack.duration_ms ?? player.durationMs}
+                  disabled={!player.isReady}
+                  onSeek={handleSeek}
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="dhun-col-right">
+          {!selectedTrack && (
+            <p style={{ color: "var(--text-dim)", textAlign: "center", marginTop: "var(--space-xl)" }}>
+              Search for a song to get started.
+            </p>
+          )}
+          {selectedTrack && lyricsLoading && <p style={{ color: "var(--text-dim)" }}>Loading lyrics…</p>}
+          {selectedTrack && lyricsError && <p style={{ color: "#f87171" }}>{lyricsError.message}</p>}
+          {selectedTrack && lyrics && (
+            <LyricsView lines={lyrics.lines} positionMs={player.positionMs} onSeek={handleSeek} />
+          )}
+        </div>
+      </div>
     </main>
   );
 }
