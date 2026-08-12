@@ -23,6 +23,7 @@ export default function SongPage({ params }: { params: { id: string } }) {
 
   const handleSeek = (ms: number) => {
     if (!started) {
+      player.activateElement();
       setStarted(true);
       player.playTrack(trackId, ms);
     } else {

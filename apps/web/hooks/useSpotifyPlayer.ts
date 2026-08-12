@@ -136,5 +136,19 @@ export function useSpotifyPlayer() {
   const togglePlay = useCallback(() => playerRef.current?.togglePlay(), []);
   const seek = useCallback((ms: number) => playerRef.current?.seek(ms), []);
 
-  return { ...state, isAuthenticated: status === "authenticated", playTrack, togglePlay, seek };
+  // Must be called synchronously inside a user-gesture click handler, before
+  // the first playTrack() — otherwise Spotify transfers playback to this
+  // device already paused (a browser-autoplay-restriction workaround), which
+  // is why "click play" was silently doing nothing until a second click hit
+  // togglePlay instead.
+  const activateElement = useCallback(() => playerRef.current?.activateElement(), []);
+
+  return {
+    ...state,
+    isAuthenticated: status === "authenticated",
+    playTrack,
+    togglePlay,
+    seek,
+    activateElement,
+  };
 }

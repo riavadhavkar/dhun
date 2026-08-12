@@ -34,6 +34,7 @@ export function PlayButton({ spotifyTrackId, player, started, onStarted }: PlayB
 
   const handleClick = () => {
     if (!started) {
+      player.activateElement();
       onStarted();
       player.playTrack(spotifyTrackId);
     } else {
