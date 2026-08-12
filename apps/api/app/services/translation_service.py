@@ -14,6 +14,12 @@ import anthropic
 from app.config import get_settings
 
 MODEL = "claude-sonnet-4-5"
+MAX_ATTEMPTS = 3
+
+# Substrings identifying failures that retrying the same request won't fix —
+# everything else (rate limits, transient content-filter false positives,
+# overload errors) is worth retrying.
+NON_RETRYABLE_MARKERS = ("credit balance", "authentication_error", "permission_error")
 
 
 class TranslationError(Exception):
@@ -39,8 +45,9 @@ class TranslationService:
 
     def translate_lines(self, lines: list[str], target_language: str) -> list[str]:
         client = self._get_client()
+        last_error: str | None = None
 
-        for attempt in range(2):
+        for attempt in range(MAX_ATTEMPTS):
             try:
                 message = client.messages.create(
                     model=MODEL,
@@ -49,21 +56,28 @@ class TranslationService:
                     messages=[{"role": "user", "content": json.dumps(lines, ensure_ascii=False)}],
                 )
             except anthropic.APIError as exc:
-                # Auth/billing/rate-limit failures won't be fixed by retrying —
-                # surface immediately with Anthropic's own message.
-                raise TranslationError(f"Anthropic API error: {exc}") from exc
+                message_text = str(exc)
+                if any(marker in message_text for marker in NON_RETRYABLE_MARKERS):
+                    raise TranslationError(f"Anthropic API error: {exc}") from exc
+                last_error = f"Anthropic API error: {exc}"
+                continue
 
             raw = message.content[0].text.strip()
 
             try:
                 translated = json.loads(raw)
             except json.JSONDecodeError:
+                last_error = "model did not return valid JSON"
                 continue
 
             if isinstance(translated, list) and len(translated) == len(lines):
                 return [str(line) for line in translated]
 
-        raise TranslationError(f"could not get a {len(lines)}-line translation after retry")
+            last_error = f"expected {len(lines)} lines, got {len(translated) if isinstance(translated, list) else 'non-list'}"
+
+        raise TranslationError(
+            f"could not get a {len(lines)}-line translation after {MAX_ATTEMPTS} attempts: {last_error}"
+        )
 
 
 translation_service = TranslationService()
