@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useAnimationControls } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export interface RecordPlayerTrack {
@@ -34,6 +34,22 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
   const tonearmLowered = reducedMotion ? hasTrack : isPlaying && flightComplete;
   const spinning = !reducedMotion && isPlaying && flightComplete;
 
+  // Imperative controls, not a plain `animate` prop, are what let a paused
+  // disc freeze at whatever angle it was at instead of snapping back to 0 —
+  // `.stop()` halts the loop in place; only `.start()` ever sets a target.
+  const discControls = useAnimationControls();
+
+  useEffect(() => {
+    if (spinning) {
+      discControls.start({
+        rotate: 360,
+        transition: { repeat: Infinity, duration: SPIN_SECONDS_PER_ROTATION, ease: "linear" },
+      });
+    } else {
+      discControls.stop();
+    }
+  }, [spinning, discControls]);
+
   const containerSize = size * 1.3;
 
   return (
@@ -47,12 +63,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
     >
       <motion.div
         aria-hidden="true"
-        animate={spinning ? { rotate: 360 } : { rotate: 0 }}
-        transition={
-          spinning
-            ? { repeat: Infinity, duration: SPIN_SECONDS_PER_ROTATION, ease: "linear" }
-            : { duration: 0 }
-        }
+        animate={discControls}
         style={{
           position: "absolute",
           left: 0,
@@ -65,20 +76,6 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: size * 0.03,
-            height: size * 0.03,
-            borderRadius: "50%",
-            background: "var(--bg)",
-            zIndex: 2,
-          }}
-        />
-
         {track && (
           <motion.div
             layoutId={`album-art-${track.id}`}
@@ -89,8 +86,8 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: size * 0.42,
-              height: size * 0.42,
+              width: size,
+              height: size,
               borderRadius: "50%",
               overflow: "hidden",
               background: "var(--surface)",
@@ -107,12 +104,24 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
-              <span style={{ fontSize: size * 0.06, color: "var(--text-dim)", fontWeight: 700 }}>
-                dhun
-              </span>
+              <span style={{ fontSize: size * 0.1, color: "var(--text-dim)", fontWeight: 700 }}>dhun</span>
             )}
           </motion.div>
         )}
+
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: size * 0.03,
+            height: size * 0.03,
+            borderRadius: "50%",
+            background: "var(--bg)",
+            zIndex: 2,
+          }}
+        />
       </motion.div>
 
       {/* Tonearm — pivots at top-right, rests off-disc when lifted, angles
@@ -130,6 +139,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           borderRadius: "var(--radius-full)",
           background: "var(--tonearm-metal)",
           transformOrigin: "top center",
+          zIndex: 3,
         }}
       >
         <div

@@ -11,11 +11,14 @@ timestamps.
 """
 
 import json
+import logging
 from dataclasses import dataclass
 
 import anthropic
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 MODEL = "claude-sonnet-4-5"
 MAX_ATTEMPTS = 3
@@ -57,6 +60,17 @@ number of elements, in the same order, as the input array. Each object must have
 string keys: "pronunciation" and "translation"."""
 
 
+def _strip_code_fence(text: str) -> str:
+    """Claude sometimes wraps JSON in ```json ... ``` despite being told not
+    to — strip that before parsing rather than failing on it."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
+
+
 class TranslationService:
     def __init__(self) -> None:
         self._client: anthropic.Anthropic | None = None
@@ -85,7 +99,7 @@ class TranslationService:
                 last_error = f"Anthropic API error: {exc}"
                 continue
 
-            raw = message.content[0].text.strip()
+            raw = _strip_code_fence(message.content[0].text.strip())
 
             try:
                 parsed = json.loads(raw)
@@ -97,6 +111,13 @@ class TranslationService:
                     last_error = f"response truncated at {MAX_OUTPUT_TOKENS} output tokens"
                 else:
                     last_error = f"model did not return valid JSON (stop_reason={message.stop_reason})"
+                logger.warning(
+                    "translate_lines: JSON parse failed on attempt %d/%d (%s). Raw response (first 500 chars): %r",
+                    attempt + 1,
+                    MAX_ATTEMPTS,
+                    last_error,
+                    raw[:500],
+                )
                 continue
 
             result = self._extract_lines(parsed, expected_count=len(lines))
@@ -104,9 +125,20 @@ class TranslationService:
                 return result
 
             last_error = f"expected {len(lines)} {{pronunciation, translation}} objects, got malformed output"
+            logger.warning(
+                "translate_lines: shape mismatch on attempt %d/%d. Raw response (first 500 chars): %r",
+                attempt + 1,
+                MAX_ATTEMPTS,
+                raw[:500],
+            )
 
         raise TranslationError(
-            f"could not get a {len(lines)}-line translation after {MAX_ATTEMPTS} attempts: {last_error}"
+            "Translating this song's lyrics didn't work after several attempts. This isn't about "
+            "missing lyrics — the lyrics were found fine; the translation step itself failed to "
+            "produce a usable result. This can happen with songs that have unusual lyric formatting "
+            "(heavy repetition, non-lyrical markers like [Instrumental], mixed-language lines) or "
+            "from a temporary hiccup with the translation service. Try again, or try a different "
+            f"target language. (debug: {last_error})"
         )
 
     @staticmethod
