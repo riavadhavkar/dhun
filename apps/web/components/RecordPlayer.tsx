@@ -19,11 +19,23 @@ interface RecordPlayerProps {
 
 const SPIN_SECONDS_PER_ROTATION = 1.8;
 
+function ArtContent({ track, size }: { track: RecordPlayerTrack; size: number }) {
+  return track.album_art ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={track.album_art}
+      alt={track.album}
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  ) : (
+    <span style={{ fontSize: size * 0.1, color: "var(--vinyl-dark)", fontWeight: 700 }}>dhun</span>
+  );
+}
+
 export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: RecordPlayerProps) {
-  // Gates spin/tonearm-down until the album art's flight animation (driven
-  // by its shared layoutId with the search result thumbnail) has actually
-  // finished landing on the platter — otherwise the disc would start
-  // spinning mid-flight, before the art has arrived.
+  // Gates spin/tonearm-down — and which art layer renders — until the
+  // album art's flight animation has actually finished landing on the
+  // platter.
   const [flightComplete, setFlightComplete] = useState(false);
 
   useEffect(() => {
@@ -35,6 +47,10 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
   const spinning = !reducedMotion && isPlaying && flightComplete;
 
   const containerSize = size * 1.3;
+  const artSize = size * 0.9;
+  const artInset = (size - artSize) / 2;
+
+  const artBackground = track?.album_art ? "var(--surface)" : "var(--label-gold)";
 
   return (
     <div
@@ -45,14 +61,16 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
         margin: "0 auto",
       }}
     >
-      {/* Plain CSS animation, not Framer Motion, drives the spin — nesting a
-          Framer `layoutId`-tracked child (the album art below) inside a
-          parent that Framer *itself* is also animating causes the two to
-          fight over the child's projected position every frame (visible as
-          the art teleporting/spinning independently of the disc). A CSS
-          `@keyframes` animation on a plain element has no such conflict, and
-          `animationPlayState: paused` (vs. removing the animation) is the
-          correct native way to freeze mid-rotation instead of resetting to 0deg. */}
+      {/* Rotating disc — plain CSS animation, and deliberately never
+          contains a Framer `layoutId`-tracked element. Framer's layout
+          projection computes an element's position via getBoundingClientRect
+          and applies a compensating transform assuming a stable coordinate
+          space; a continuously rotating ancestor (whether the rotation is
+          CSS- or Framer-driven) invalidates that assumption every frame,
+          which is what caused the art to visually detach and drift instead
+          of tracking the disc. The fix is architectural, not just "use CSS
+          instead of Framer for the rotation": the layoutId element must
+          never be a descendant of anything that rotates, ever. */}
       <div
         aria-hidden="true"
         style={{
@@ -70,37 +88,29 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           animationPlayState: spinning ? "running" : "paused",
         }}
       >
-        {track && (
-          <motion.div
-            layoutId={`album-art-${track.id}`}
-            onLayoutAnimationComplete={() => setFlightComplete(true)}
-            transition={{ duration: reducedMotion ? 0.15 : 0.55, ease: [0, 0, 0.2, 1] }}
+        {/* Plain (non-Framer) art layer — only mounted once the flight has
+            landed, so it never coexists with the layoutId flight element
+            below for the same track. Same size/position as the flight
+            element's landing spot, so the handoff is visually seamless. */}
+        {track && flightComplete && (
+          <div
             style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: size * 0.9,
-              height: size * 0.9,
+              width: artSize,
+              height: artSize,
               borderRadius: "50%",
               overflow: "hidden",
-              background: track.album_art ? "var(--surface)" : "var(--label-gold)",
+              background: artBackground,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            {track.album_art ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={track.album_art}
-                alt={track.album}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <span style={{ fontSize: size * 0.1, color: "var(--vinyl-dark)", fontWeight: 700 }}>dhun</span>
-            )}
-          </motion.div>
+            <ArtContent track={track} size={size} />
+          </div>
         )}
 
         <div
@@ -117,6 +127,36 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
           }}
         />
       </div>
+
+      {/* Flight layer — a sibling of the rotating disc, not a descendant, so
+          Framer's layout projection is never fighting a rotating ancestor.
+          Positioned to land at exactly the same screen spot the plain art
+          layer above occupies, so there's no visible jump at handoff (the
+          disc is always at 0deg when this completes, since spinning only
+          starts once flightComplete flips true). */}
+      {track && !flightComplete && (
+        <motion.div
+          layoutId={`album-art-${track.id}`}
+          onLayoutAnimationComplete={() => setFlightComplete(true)}
+          transition={{ duration: reducedMotion ? 0.15 : 0.55, ease: [0, 0, 0.2, 1] }}
+          style={{
+            position: "absolute",
+            left: artInset,
+            bottom: artInset,
+            width: artSize,
+            height: artSize,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: artBackground,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1,
+          }}
+        >
+          <ArtContent track={track} size={size} />
+        </motion.div>
+      )}
 
       {/* Tonearm — pivots at top-right, rests off-disc when lifted, angles
           down onto the platter's edge when lowered. */}
