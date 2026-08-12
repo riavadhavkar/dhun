@@ -42,6 +42,12 @@ class Translation(Base):
     # list[str], same order/length as song.synced_lyrics
     translated_lines: Mapped[list[str]] = mapped_column(JSONB)
 
+    # list[str], phonetic pronunciation of the original line written in the
+    # target language's own script (e.g. Korean lyrics -> Devanagari for a
+    # Hindi reader). Nullable so rows created before this field existed don't
+    # break; the router regenerates them on next request.
+    transliterated_lines: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+
     model_used: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

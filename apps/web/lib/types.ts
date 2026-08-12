@@ -10,6 +10,7 @@ export interface TrackSearchResult {
 export interface LyricLine {
   start_ms: number;
   original: string;
+  pronunciation: string;
   translated: string;
 }
 

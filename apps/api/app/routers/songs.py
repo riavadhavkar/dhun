@@ -63,22 +63,26 @@ async def get_lyrics(
         select(Translation).where(Translation.song_id == song.id, Translation.language_code == lang)
     )
 
-    if translation is None:
+    # Also regenerates rows created before the pronunciation field existed.
+    if translation is None or translation.transliterated_lines is None:
         original_texts = [line["text"] for line in song.synced_lyrics]
         try:
-            translated_texts = translation_service.translate_lines(
+            result_lines = translation_service.translate_lines(
                 original_texts, LANGUAGE_NAMES_BY_CODE[lang]
             )
         except TranslationError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-        translation = Translation(
-            song_id=song.id,
-            language_code=lang,
-            translated_lines=translated_texts,
-            model_used="claude-sonnet-4-5",
-        )
-        db.add(translation)
+        translated_texts = [line.translation for line in result_lines]
+        transliterated_texts = [line.pronunciation for line in result_lines]
+
+        if translation is None:
+            translation = Translation(song_id=song.id, language_code=lang)
+            db.add(translation)
+
+        translation.translated_lines = translated_texts
+        translation.transliterated_lines = transliterated_texts
+        translation.model_used = "claude-sonnet-4-5"
         db.commit()
         db.refresh(translation)
 
@@ -86,9 +90,12 @@ async def get_lyrics(
         LyricLine(
             start_ms=original["start_ms"],
             original=original["text"],
+            pronunciation=pronunciation,
             translated=translated,
         )
-        for original, translated in zip(song.synced_lyrics, translation.translated_lines)
+        for original, pronunciation, translated in zip(
+            song.synced_lyrics, translation.transliterated_lines, translation.translated_lines
+        )
     ]
 
     return LyricsResponse(track_id=spotify_track_id, language=lang, lines=lines)

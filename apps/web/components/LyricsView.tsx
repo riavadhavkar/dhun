@@ -46,6 +46,9 @@ export function LyricsView({ lines, positionMs }: LyricsViewProps) {
             >
               {line.original}
             </div>
+            <div style={{ fontSize: "0.9rem", fontStyle: "italic", color: "var(--text-dim)" }}>
+              {line.pronunciation}
+            </div>
             <div style={{ fontSize: "0.95rem", color: "var(--text-dim)" }}>{line.translated}</div>
           </div>
         );

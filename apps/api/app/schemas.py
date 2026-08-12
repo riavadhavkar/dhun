@@ -13,6 +13,7 @@ class TrackSearchResult(BaseModel):
 class LyricLine(BaseModel):
     start_ms: int
     original: str
+    pronunciation: str
     translated: str
 
 
