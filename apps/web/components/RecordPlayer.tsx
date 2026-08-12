@@ -17,7 +17,7 @@ interface RecordPlayerProps {
   size?: number;
 }
 
-const SPIN_SECONDS_PER_ROTATION = 7.2;
+const SPIN_SECONDS_PER_ROTATION = 14.4;
 
 function ArtContent({ track, size }: { track: RecordPlayerTrack; size: number }) {
   return track.album_art ? (
