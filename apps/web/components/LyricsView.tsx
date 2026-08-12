@@ -8,9 +8,10 @@ import type { LyricLine } from "@/lib/types";
 interface LyricsViewProps {
   lines: LyricLine[];
   positionMs: number;
+  onSeek: (ms: number) => void;
 }
 
-export function LyricsView({ lines, positionMs }: LyricsViewProps) {
+export function LyricsView({ lines, positionMs, onSeek }: LyricsViewProps) {
   const activeIndex = useMemo(() => findActiveLineIndex(lines, positionMs), [lines, positionMs]);
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -29,12 +30,19 @@ export function LyricsView({ lines, positionMs }: LyricsViewProps) {
             ref={(el) => {
               lineRefs.current[i] = el;
             }}
+            onClick={() => onSeek(line.start_ms)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onSeek(line.start_ms);
+            }}
             style={{
               padding: "0.6rem 0",
               opacity: isActive ? 1 : isPast ? 0.35 : 0.55,
               transform: isActive ? "scale(1.03)" : "scale(1)",
               transformOrigin: "left",
               transition: "opacity 150ms ease, transform 150ms ease",
+              cursor: "pointer",
             }}
           >
             <div

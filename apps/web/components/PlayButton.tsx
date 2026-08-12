@@ -1,20 +1,21 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
 interface PlayButtonProps {
   spotifyTrackId: string;
   player: ReturnType<typeof useSpotifyPlayer>;
+  // Whether *this* track has been started at least once — lifted to the
+  // parent since the seek bar and lyric-click-to-seek need to know it too
+  // (resuming after pause should call `togglePlay`; `playTrack` always
+  // restarts from the given position instead of resuming).
+  started: boolean;
+  onStarted: () => void;
 }
 
-export function PlayButton({ spotifyTrackId, player }: PlayButtonProps) {
-  // Tracks whether *this* track has been started via `play`, since resuming
-  // after a pause should call `togglePlay` — `playTrack` always restarts it.
-  const [started, setStarted] = useState(false);
-
+export function PlayButton({ spotifyTrackId, player, started, onStarted }: PlayButtonProps) {
   if (!player.isAuthenticated) {
     return (
       <button onClick={() => signIn("spotify")} style={buttonStyle}>
@@ -33,7 +34,7 @@ export function PlayButton({ spotifyTrackId, player }: PlayButtonProps) {
 
   const handleClick = () => {
     if (!started) {
-      setStarted(true);
+      onStarted();
       player.playTrack(spotifyTrackId);
     } else {
       player.togglePlay();

@@ -116,7 +116,7 @@ export function useSpotifyPlayer() {
   }, [state.isReady]);
 
   const playTrack = useCallback(
-    async (spotifyTrackId: string) => {
+    async (spotifyTrackId: string, positionMs?: number) => {
       if (!state.deviceId || !accessTokenRef.current) return;
       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${state.deviceId}`, {
         method: "PUT",
@@ -124,7 +124,10 @@ export function useSpotifyPlayer() {
           Authorization: `Bearer ${accessTokenRef.current}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ uris: [`spotify:track:${spotifyTrackId}`] }),
+        body: JSON.stringify({
+          uris: [`spotify:track:${spotifyTrackId}`],
+          ...(positionMs !== undefined ? { position_ms: positionMs } : {}),
+        }),
       });
     },
     [state.deviceId]
