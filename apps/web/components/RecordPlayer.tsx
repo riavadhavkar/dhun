@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export interface RecordPlayerTrack {
   id: string;
@@ -38,9 +38,22 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
   // platter.
   const [flightComplete, setFlightComplete] = useState(false);
 
-  useEffect(() => {
+  // Resetting this in a useEffect (which runs after commit) races with the
+  // page's click handler, which unmounts the search results overlay (the
+  // flight's "from" element) in the SAME render as selecting a new track.
+  // On any selection after the first, flightComplete was still true from
+  // the previous track by the time this render decides what to show, so the
+  // art swapped instantly with no flight — and by the time the effect fired
+  // a render later, the "from" element was already gone, so the flight
+  // layer mounted with nothing to animate from and never actually landed
+  // (no onLayoutAnimationComplete), leaving the disc gated off forever.
+  // Resetting synchronously during render — React's documented pattern for
+  // "adjusting state when a prop changes" — closes that race.
+  const [trackedId, setTrackedId] = useState<string | null>(track?.id ?? null);
+  if ((track?.id ?? null) !== trackedId) {
+    setTrackedId(track?.id ?? null);
     setFlightComplete(false);
-  }, [track?.id]);
+  }
 
   const hasTrack = track !== null;
   const tonearmLowered = reducedMotion ? hasTrack : isPlaying && flightComplete;
