@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useAnimationControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export interface RecordPlayerTrack {
@@ -34,22 +34,6 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
   const tonearmLowered = reducedMotion ? hasTrack : isPlaying && flightComplete;
   const spinning = !reducedMotion && isPlaying && flightComplete;
 
-  // Imperative controls, not a plain `animate` prop, are what let a paused
-  // disc freeze at whatever angle it was at instead of snapping back to 0 —
-  // `.stop()` halts the loop in place; only `.start()` ever sets a target.
-  const discControls = useAnimationControls();
-
-  useEffect(() => {
-    if (spinning) {
-      discControls.start({
-        rotate: 360,
-        transition: { repeat: Infinity, duration: SPIN_SECONDS_PER_ROTATION, ease: "linear" },
-      });
-    } else {
-      discControls.stop();
-    }
-  }, [spinning, discControls]);
-
   const containerSize = size * 1.3;
 
   return (
@@ -61,9 +45,16 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
         margin: "0 auto",
       }}
     >
-      <motion.div
+      {/* Plain CSS animation, not Framer Motion, drives the spin — nesting a
+          Framer `layoutId`-tracked child (the album art below) inside a
+          parent that Framer *itself* is also animating causes the two to
+          fight over the child's projected position every frame (visible as
+          the art teleporting/spinning independently of the disc). A CSS
+          `@keyframes` animation on a plain element has no such conflict, and
+          `animationPlayState: paused` (vs. removing the animation) is the
+          correct native way to freeze mid-rotation instead of resetting to 0deg. */}
+      <div
         aria-hidden="true"
-        animate={discControls}
         style={{
           position: "absolute",
           left: 0,
@@ -75,6 +66,8 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
             "repeating-radial-gradient(circle, var(--vinyl-groove) 0px, var(--vinyl-groove) 1px, transparent 2px, transparent 5px), " +
             "radial-gradient(circle at 38% 32%, var(--vinyl-highlight) 0%, var(--vinyl-mid) 45%, var(--vinyl-dark) 100%)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+          animation: `dhun-spin ${SPIN_SECONDS_PER_ROTATION}s linear infinite`,
+          animationPlayState: spinning ? "running" : "paused",
         }}
       >
         {track && (
@@ -87,8 +80,8 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: size,
-              height: size,
+              width: size * 0.9,
+              height: size * 0.9,
               borderRadius: "50%",
               overflow: "hidden",
               background: track.album_art ? "var(--surface)" : "var(--label-gold)",
@@ -123,7 +116,7 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
             zIndex: 2,
           }}
         />
-      </motion.div>
+      </div>
 
       {/* Tonearm — pivots at top-right, rests off-disc when lifted, angles
           down onto the platter's edge when lowered. */}
