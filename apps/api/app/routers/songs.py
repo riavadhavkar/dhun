@@ -45,7 +45,7 @@ async def _get_or_create_song(spotify_track_id: str, db: Session) -> Song:
     except NoSyncedLyricsError:
         raise HTTPException(
             status_code=404,
-            detail="No synced lyrics available for this track.",
+            detail="musixmatch hasn't caught up with synced lyrics for this track yet (ᵕ—ᴗ—)",
         ) from None
 
     song = Song(
