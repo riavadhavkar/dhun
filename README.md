@@ -1,8 +1,8 @@
 # dhun
 
-Search for a song, play it, and follow along with synced lyrics translated into your preferred language — karaoke for songs in languages you can't read.
+search for a song, play it, and follow along with synced lyrics translated into your preferred language — karaoke for songs in languages you can't read.
 
-## Stack
+## stack
 
 - **Frontend**: Next.js (App Router) + TypeScript, TanStack Query, NextAuth (Spotify), Spotify Web Playback SDK
 - **Backend**: FastAPI + SQLAlchemy + Alembic
@@ -11,7 +11,7 @@ Search for a song, play it, and follow along with synced lyrics translated into 
 - **Lyrics**: LRCLIB (free, no API key required)
 - **Infra**: Docker, Terraform (AWS: ECS/Fargate, RDS)
 
-## Local development
+## local development
 
 ```bash
 cp .env.example .env   # fill in API keys
