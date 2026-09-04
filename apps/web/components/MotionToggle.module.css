@@ -1,0 +1,52 @@
+.button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+.button:hover {
+  background: var(--surface);
+  border-color: var(--accent-deep);
+}
+
+.button:active {
+  transform: scale(0.94);
+}
+
+/* Hover / focus tooltip. */
+.button::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+.button:hover::after,
+.button:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}

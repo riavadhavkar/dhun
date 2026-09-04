@@ -1,0 +1,83 @@
+.scroll {
+  max-height: calc(100vh - 220px);
+  min-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-xl) var(--space-sm);
+  /* Soft fade at the top and bottom instead of a hard clip. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+}
+
+.line {
+  position: relative;
+  padding: 0.75rem 0 0.75rem 1.25rem;
+  cursor: pointer;
+  transition: opacity var(--motion-medium) var(--ease-standard),
+    filter var(--motion-medium) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+.upcoming {
+  opacity: 0.55;
+}
+
+.past {
+  opacity: 0.38;
+  filter: blur(0.7px);
+}
+
+.active {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.02);
+  transform-origin: left;
+}
+
+/* "Now playing" tick on the active line. */
+.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 3px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.original {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.active .original {
+  font-weight: 700;
+  color: var(--accent-deep);
+}
+
+.pronunciation {
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--text-mute);
+  margin-top: 0.15rem;
+}
+
+.translated {
+  font-size: 0.98rem;
+  color: var(--text-dim);
+  margin-top: 0.1rem;
+}

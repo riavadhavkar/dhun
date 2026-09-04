@@ -1,44 +1,133 @@
-:root {
-  --bg: #0b0b10;
-  --surface: #16161e;
-  --border: #2a2a35;
-  --text: #f2f2f5;
-  --text-dim: #9a9aa8;
-  --accent: #1db954;
+/* ==========================================================================
+   dhun — "strawberry-milk" design system
+   Soft kawaii palette: warm milk-cream ground, clean white surfaces, a
+   strawberry-milk pink accent, gentle warm shadows and rounded corners.
+   (Spotify green is kept only for the literal "Connect Spotify" button.)
+   ========================================================================== */
 
+:root {
+  /* Ground + surfaces */
+  --bg: #fbf3ea; /* warm milk cream */
+  --bg-deep: #fffdf9; /* near-white — recessed fields */
+  --surface: #f7ebdd; /* soft hover tint */
+  --surface-2: #f0dfcc; /* stronger hover / active */
+  --panel: #fffaf3; /* tooltips, popovers */
+  --panel-edge: #d8c4ab88;
+
+  /* Lines */
+  --border: #ecdcc8;
+  --border-soft: rgba(120, 92, 70, 0.12);
+
+  /* Text — soft warm cocoa, never pure black */
+  --text: #5b4636;
+  --text-dim: #a58e79;
+  --text-mute: #c3ad96;
+
+  /* Accent — strawberry milk pink */
+  --accent: #f0a1ba;
+  --accent-soft: #ffc9dc;
+  --accent-deep: #df7a9c; /* readable pink for text on cream */
+  --accent-ink: #7c3350; /* deep berry — text on a pink fill */
+  --accent-glow: rgba(240, 161, 186, 0.4);
+
+  --spotify: #1db954;
+  --danger: #e2746c;
+
+  /* Vinyl / record-label fallbacks */
+  --label-gold: #ffd2e0;
+  --vinyl-dark: #4a3f47;
+  --vinyl-groove: rgba(0, 0, 0, 0.12);
+
+  /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 40px;
+  --space-2xl: 64px;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  /* Radius — rounded for softness */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
   --radius-full: 999px;
 
-  --vinyl-highlight: #a97c3f;
-  --vinyl-mid: #6b4423;
-  --vinyl-dark: #2e1c10;
-  --vinyl-groove: rgba(0, 0, 0, 0.14);
-  --tonearm-metal: #cba053;
-  --label-gold: #d9b45f;
+  /* Elevation — soft, warm, low-contrast */
+  --elev-1: 0 1px 3px rgba(150, 110, 90, 0.14);
+  --elev-2: 0 10px 28px rgba(150, 110, 90, 0.16);
+  --elev-3: 0 24px 60px rgba(150, 110, 90, 0.18);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 
+  /* Motion */
   --motion-fast: 150ms;
   --motion-medium: 400ms;
   --motion-flight: 550ms;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out-soft: cubic-bezier(0, 0, 0.2, 1);
+
+  /* Turntable */
+  --platter-spin: 14s; /* per rotation — slow/ambient, not literal 33⅓ RPM */
+
+  /* Type */
+  --font-display: "Playwrite NZ Basic", "Segoe Script", "Bradley Hand", cursive;
+  --font-sans: "Host Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Soft pastel wash — a little strawberry up top, a little peach at the bottom. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      rgba(255, 201, 220, 0.4) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      100% 100% at 50% 120%,
+      rgba(255, 224, 196, 0.35) 0%,
+      transparent 60%
+    );
+}
+
+/* Barely-there paper grain. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.02;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 a {
@@ -48,41 +137,141 @@ a {
 
 input,
 select,
-button {
+button,
+textarea {
   font: inherit;
+  color: inherit;
 }
 
-main {
-  max-width: 720px;
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+/* Thin warm scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+/* ============================ layout shell ============================ */
+
+.dhun-page {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding: var(--space-lg);
+  overflow: hidden; /* the page itself never scrolls on desktop */
+}
+
+.dhun-shell {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 2rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-main.dhun-main {
-  max-width: 1080px;
+.dhun-shell,
+.dhun-console,
+.dhun-columns,
+.dhun-search-wrap {
+  max-width: 100%;
 }
 
-@keyframes dhun-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* The framed "console" the app sits inside. It fills the shell exactly, so the
+   page never scrolls and the gap above and below it (= .dhun-page padding) is
+   equal. Long content scrolls inside the lyrics panel, not the page. */
+.dhun-console {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, var(--surface) 0%, var(--bg-deep) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+/* Wood grain bleeding in at the console edges, straight from the photo. */
+.dhun-console::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("/console.jpg");
+  background-size: 150% auto;
+  background-position: center 22%;
+  opacity: 0.05;
+  filter: saturate(0.5) brightness(1.35);
+  -webkit-mask-image: radial-gradient(
+    120% 80% at 50% 50%,
+    transparent 40%,
+    #000 100%
+  );
+  mask-image: radial-gradient(120% 80% at 50% 50%, transparent 40%, #000 100%);
+}
+
+.dhun-console > * {
+  position: relative;
 }
 
 .dhun-columns {
   display: flex;
+  flex: 1;
+  min-height: 0;
   gap: var(--space-xl);
-  align-items: flex-start;
+  align-items: center;
+  margin-top: var(--space-lg);
 }
 
 .dhun-col-left {
   width: 44%;
+  min-width: 0;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  /* Falls back to an internal scroll only on viewports too short to fit the
+     record + connect card; on normal screens nothing scrolls. */
+  overflow-y: auto;
 }
 
 .dhun-col-right {
   width: 56%;
+  min-width: 0;
 }
 
 @media (max-width: 1024px) {
@@ -95,11 +284,217 @@ main.dhun-main {
 }
 
 @media (max-width: 768px) {
+  /* Stacked layout is taller than the viewport — let the page scroll here. */
+  .dhun-page {
+    height: auto;
+    min-height: 100dvh;
+    padding: var(--space-md);
+    overflow: visible;
+  }
+  .dhun-shell {
+    flex: 0 0 auto;
+  }
+  .dhun-console {
+    flex: 0 0 auto;
+    padding: var(--space-lg) var(--space-md);
+  }
   .dhun-columns {
+    flex: 0 0 auto;
     flex-direction: column;
+    align-items: stretch;
   }
   .dhun-col-left,
   .dhun-col-right {
     width: 100%;
   }
+  .dhun-col-left {
+    overflow: visible;
+  }
+}
+
+/* ============================ search ============================ */
+
+/* Search input + the motion button as a separate control to its right. */
+.dhun-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.dhun-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.dhun-search {
+  width: 100%;
+  padding: 0.95rem 1.1rem 0.95rem 2.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 1rem;
+  transition: border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.dhun-search::placeholder {
+  color: var(--text-mute);
+}
+
+.dhun-search:focus {
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+  outline: none;
+}
+
+.dhun-search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+/* ============================ misc text ============================ */
+
+.dhun-muted {
+  color: var(--text-dim);
+}
+
+.dhun-error {
+  color: var(--danger);
+}
+
+/* Sits in the gap between the console and the window edge. */
+.dhun-copyright {
+  flex-shrink: 0;
+  margin-top: var(--space-sm);
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--text-mute);
+}
+
+/* Right-column empty state — "pull a record". */
+.dhun-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.dhun-empty-sub {
+  max-width: 30ch;
+  font-size: 0.95rem;
+}
+
+/* Lyrics skeleton */
+.dhun-skeleton {
+  padding: var(--space-xl) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.dhun-skeleton-line {
+  height: 1.1rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-2) 37%,
+    var(--surface) 63%
+  );
+  background-size: 400% 100%;
+  animation: dhun-shimmer 1.4s ease infinite;
+}
+.dhun-skeleton-line:nth-child(3n) {
+  width: 65%;
+}
+.dhun-skeleton-line:nth-child(3n + 1) {
+  width: 90%;
+}
+.dhun-skeleton-line:nth-child(3n + 2) {
+  width: 78%;
+}
+
+/* Inline status pill (e.g. "Translating…") that doesn't shift layout. */
+.dhun-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.dhun-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dhun-pulse 1.2s ease infinite;
+}
+.dhun-pill-error {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.dhun-pill-error::before {
+  background: var(--danger);
+  animation: none;
+}
+
+.dhun-lyrics-status {
+  min-height: 1.75rem;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+/* dhun-spin lives in RecordPlayer.module.css — CSS Modules scopes the
+   `animation:` reference there, so the @keyframes has to be scoped alongside
+   it or the name won't match. */
+
+@keyframes dhun-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes dhun-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Reduced-motion safety net. Keyed *only* off <html data-reduced-motion="true">
+   — that attribute is the single source of truth: seeded from the OS
+   `prefers-reduced-motion` setting before first paint (inline script in
+   layout.tsx), then overridden by the in-app toggle. Keying off the OS media
+   query directly here would let the OS setting override an explicit "motion
+   on" choice, which is why the record stopped spinning. */
+:root[data-reduced-motion="true"] *,
+:root[data-reduced-motion="true"] *::before,
+:root[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

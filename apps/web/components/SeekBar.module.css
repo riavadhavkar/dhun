@@ -1,0 +1,75 @@
+.wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* The input itself is a tall, invisible hit area; the visible 3px track and the
+   thumb are drawn by the pseudo-elements and stay vertically centred on it. */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.range:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* WebKit / Blink */
+.range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--pct, 0%),
+    rgba(120, 92, 70, 0.16) var(--pct, 0%)
+  );
+}
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px; /* (track 3px − thumb 12px) / 2 */
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(120, 92, 70, 0.45);
+}
+
+/* Firefox */
+.range::-moz-range-track {
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: rgba(120, 92, 70, 0.16);
+}
+
+.range::-moz-range-progress {
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(120, 92, 70, 0.45);
+}
+
+.times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}

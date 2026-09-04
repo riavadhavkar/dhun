@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 
+import styles from "./RecordPlayer.module.css";
+
 export interface RecordPlayerTrack {
   id: string;
   name: string;
@@ -14,25 +16,23 @@ interface RecordPlayerProps {
   track: RecordPlayerTrack | null;
   isPlaying: boolean;
   reducedMotion: boolean;
-  size?: number;
+  /** 0–1 playback position — drives the tonearm's slow inward creep. */
+  progress?: number;
 }
 
-const SPIN_SECONDS_PER_ROTATION = 28.8;
+// Tonearm rotation (pivot at top-right): parked clear of the disc, then it
+// drops onto the outer groove at the song's start and creeps toward the label
+// as it plays — like a real deck.
+const TONEARM_PARKED = -4;
+const TONEARM_START = 17; // needle on the outer groove, near the disc rim
+const TONEARM_END = 27; // needle just outside the album-art label — no overlap
 
-function ArtContent({ track, size }: { track: RecordPlayerTrack; size: number }) {
-  return track.album_art ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={track.album_art}
-      alt={track.album}
-      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-    />
-  ) : (
-    <span style={{ fontSize: size * 0.1, color: "var(--vinyl-dark)", fontWeight: 700 }}>dhun</span>
-  );
-}
-
-export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: RecordPlayerProps) {
+export function RecordPlayer({
+  track,
+  isPlaying,
+  reducedMotion,
+  progress = 0,
+}: RecordPlayerProps) {
   // Gates spin/tonearm-down — and which art layer renders — until the
   // album art's flight animation has actually finished landing on the
   // platter.
@@ -56,50 +56,42 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
   }
 
   const hasTrack = track !== null;
-  const tonearmLowered = reducedMotion ? hasTrack : isPlaying && flightComplete;
-  const spinning = !reducedMotion && isPlaying && flightComplete;
+  // Engaged once the record is playing — and it *stays* engaged while paused
+  // (progress > 0), like a real deck where you'd have to lift the arm yourself.
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  const armEngaged = hasTrack && (isPlaying || clampedProgress > 0);
+  const tonearmAngle = armEngaged
+    ? TONEARM_START + clampedProgress * (TONEARM_END - TONEARM_START)
+    : TONEARM_PARKED;
+  // Spin as soon as audio is playing — the disc is a sibling of the flight
+  // element, never its ancestor, so it's safe to rotate during the ~550ms
+  // art flight. Gating this on `flightComplete` (a Framer callback that can
+  // silently not fire) was leaving the platter frozen mid-song.
+  const spinning = !reducedMotion && isPlaying;
 
-  const containerSize = size * 1.3;
-  const artSize = size * 0.9;
-  const artInset = (size - artSize) / 2;
-
-  const artBackground = track?.album_art ? "var(--surface)" : "var(--label-gold)";
+  const art = (t: RecordPlayerTrack) =>
+    t.album_art ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={t.album_art} alt={t.album} />
+    ) : (
+      <span className={styles.wordmark} style={{ fontSize: "1.1rem" }}>
+        dhun
+      </span>
+    );
 
   return (
-    <div
-      style={{
-        position: "relative",
-        width: containerSize,
-        height: containerSize * 0.95,
-        margin: "0 auto",
-      }}
-    >
-      {/* Rotating disc — plain CSS animation, and deliberately never
-          contains a Framer `layoutId`-tracked element. Framer's layout
-          projection computes an element's position via getBoundingClientRect
-          and applies a compensating transform assuming a stable coordinate
-          space; a continuously rotating ancestor (whether the rotation is
-          CSS- or Framer-driven) invalidates that assumption every frame,
-          which is what caused the art to visually detach and drift instead
-          of tracking the disc. The fix is architectural, not just "use CSS
-          instead of Framer for the rotation": the layoutId element must
-          never be a descendant of anything that rotates, ever. */}
+    <div className={styles.stage}>
+      <div className={`${styles.glow} ${spinning ? styles.glowOn : ""}`} aria-hidden="true" />
+
+      {/* Rotating disc — plain CSS animation, and deliberately never contains
+          a Framer `layoutId`-tracked element. A continuously rotating ancestor
+          invalidates Framer's layout projection every frame, which is what
+          caused the art to visually detach and drift. The layoutId element
+          must never be a descendant of anything that rotates, ever. */}
       <div
+        className={styles.disc}
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          left: 0,
-          bottom: 0,
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          background:
-            "repeating-radial-gradient(circle, var(--vinyl-groove) 0px, var(--vinyl-groove) 1px, transparent 2px, transparent 5px), " +
-            "radial-gradient(circle at 38% 32%, var(--vinyl-highlight) 0%, var(--vinyl-mid) 45%, var(--vinyl-dark) 100%)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-          animation: `dhun-spin ${SPIN_SECONDS_PER_ROTATION}s linear infinite`,
-          animationPlayState: spinning ? "running" : "paused",
-        }}
+        style={{ animationPlayState: spinning ? "running" : "paused" }}
       >
         {/* Plain (non-Framer) art layer — only mounted once the flight has
             landed, so it never coexists with the layoutId flight element
@@ -107,99 +99,54 @@ export function RecordPlayer({ track, isPlaying, reducedMotion, size = 220 }: Re
             element's landing spot, so the handoff is visually seamless. */}
         {track && flightComplete && (
           <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: artSize,
-              height: artSize,
-              borderRadius: "50%",
-              overflow: "hidden",
-              background: artBackground,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className={`${styles.label} ${
+              track.album_art ? styles.labelArt : styles.labelFallback
+            }`}
           >
-            <ArtContent track={track} size={size} />
+            {art(track)}
           </div>
         )}
 
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: size * 0.03,
-            height: size * 0.03,
-            borderRadius: "50%",
-            background: "var(--bg)",
-            zIndex: 2,
-          }}
-        />
+        {!hasTrack && (
+          <span className={styles.emptyMark} aria-hidden="true">
+            dhun
+          </span>
+        )}
+
+        {hasTrack && <div className={styles.spindle} />}
       </div>
 
       {/* Flight layer — a sibling of the rotating disc, not a descendant, so
           Framer's layout projection is never fighting a rotating ancestor.
-          Positioned to land at exactly the same screen spot the plain art
-          layer above occupies, so there's no visible jump at handoff (the
-          disc is always at 0deg when this completes, since spinning only
-          starts once flightComplete flips true). */}
+          Lands at exactly the spot the plain art layer above occupies. */}
       {track && !flightComplete && (
         <motion.div
+          className={styles.flight}
           layoutId={`album-art-${track.id}`}
           onLayoutAnimationComplete={() => setFlightComplete(true)}
           transition={{ duration: reducedMotion ? 0.15 : 0.55, ease: [0, 0, 0.2, 1] }}
           style={{
-            position: "absolute",
-            left: artInset,
-            bottom: artInset,
-            width: artSize,
-            height: artSize,
-            borderRadius: "50%",
-            overflow: "hidden",
-            background: artBackground,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1,
+            background: track.album_art ? "var(--surface)" : "#1a1a1f",
           }}
         >
-          <ArtContent track={track} size={size} />
+          {art(track)}
         </motion.div>
       )}
 
-      {/* Tonearm — pivots at top-right, rests off-disc when lifted, angles
-          down onto the platter's edge when lowered. */}
+      {/* Tonearm — pivots at top-right, parked clear of the platter, then drops
+          onto the outer groove and creeps toward the label as the song plays. */}
       <motion.div
+        className={styles.tonearm}
         aria-hidden="true"
-        animate={{ rotate: tonearmLowered ? 25 : -20 }}
-        transition={reducedMotion ? { duration: 0 } : { duration: 0.35, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          top: 0,
-          right: size * 0.08,
-          width: 4,
-          height: size * 0.55,
-          borderRadius: "var(--radius-full)",
-          background: "var(--tonearm-metal)",
-          transformOrigin: "top center",
-          zIndex: 3,
-        }}
+        // Framer overrides CSS transform-origin with its own default (center),
+        // so the pivot point must be set inline here, not in the module.
+        style={{ transformOrigin: "top center" }}
+        animate={{ rotate: tonearmAngle }}
+        transition={reducedMotion ? { duration: 0 } : { duration: 0.6, ease: "easeOut" }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: -5,
-            left: -6,
-            width: 14,
-            height: 14,
-            borderRadius: "50%",
-            background: "var(--tonearm-metal)",
-          }}
-        />
+        <div className={styles.tonearmTube} />
+        <div className={styles.tonearmPivot} />
+        <div className={styles.tonearmHead} />
       </motion.div>
     </div>
   );

@@ -6,7 +6,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail ?? `Request failed: ${res.status}`);
+    throw new Error(body.detail ?? `request failed: ${res.status}`);
   }
   return res.json() as Promise<T>;
 }

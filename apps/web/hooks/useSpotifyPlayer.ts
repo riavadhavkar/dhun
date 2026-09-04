@@ -67,16 +67,25 @@ export function useSpotifyPlayer() {
         setState((s) => ({ ...s, isReady: false }));
       });
 
-      player.addListener("initialization_error", ({ message }) => {
-        setState((s) => ({ ...s, error: message }));
+      // The SDK's own messages are capitalized ("Failed to initialize player",
+      // etc.); normalise them to match dhun's all-lowercase copy. The raw
+      // payload is logged so the actual cause is visible in devtools —
+      // `initialization_error` almost always means the browser can't provide
+      // the EME/Widevine layer the SDK needs (DRM disabled, a blocker, an
+      // unsupported/automation browser, or a stale Widevine component).
+      player.addListener("initialization_error", (e) => {
+        console.error("[dhun] spotify player: initialization_error", e);
+        setState((s) => ({ ...s, error: e.message.toLowerCase() }));
       });
-      player.addListener("authentication_error", ({ message }) => {
-        setState((s) => ({ ...s, error: message }));
+      player.addListener("authentication_error", (e) => {
+        console.error("[dhun] spotify player: authentication_error", e);
+        setState((s) => ({ ...s, error: e.message.toLowerCase() }));
       });
-      player.addListener("account_error", () => {
+      player.addListener("account_error", (e) => {
+        console.error("[dhun] spotify player: account_error", e);
         setState((s) => ({
           ...s,
-          error: "This feature requires a Spotify Premium account.",
+          error: "this feature requires a spotify premium account.",
         }));
       });
 
@@ -146,6 +155,10 @@ export function useSpotifyPlayer() {
   return {
     ...state,
     isAuthenticated: status === "authenticated",
+    authStatus: status,
+    // Set by the auth layer when a token refresh fails — the user needs to
+    // reconnect Spotify.
+    sessionError: (session?.error as string | undefined) ?? null,
     playTrack,
     togglePlay,
     seek,

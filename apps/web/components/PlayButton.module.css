@@ -1,0 +1,45 @@
+/* Round icon play/pause button — the centre of the transport row. */
+.play {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  color: var(--accent-ink);
+  box-shadow: var(--elev-2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform var(--motion-fast) var(--ease-standard),
+    filter var(--motion-fast) var(--ease-standard);
+}
+
+.play:hover {
+  filter: brightness(1.06);
+}
+
+.play:active {
+  transform: scale(0.95);
+}
+
+.play svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+/* Pre-playback states, kept quiet so they don't shout from the transport row. */
+.connect {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #2ee066, var(--spotify));
+  color: #04140a;
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  box-shadow: var(--elev-1);
+}
+
+.status {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}

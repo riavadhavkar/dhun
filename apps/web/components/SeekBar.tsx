@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import styles from "./SeekBar.module.css";
+
 interface SeekBarProps {
   positionMs: number;
   durationMs: number;
@@ -22,6 +24,7 @@ export function SeekBar({ positionMs, durationMs, disabled, onSeek }: SeekBarPro
   const [dragValue, setDragValue] = useState<number | null>(null);
   const displayValue = dragValue ?? positionMs;
   const max = durationMs || 1;
+  const pct = `${Math.min(100, (displayValue / max) * 100)}%`;
 
   const commitSeek = (e: React.SyntheticEvent<HTMLInputElement>) => {
     onSeek(Number(e.currentTarget.value));
@@ -29,24 +32,24 @@ export function SeekBar({ positionMs, durationMs, disabled, onSeek }: SeekBarPro
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", width: "100%" }}>
-      <span style={{ fontSize: "0.8rem", color: "var(--text-dim)", minWidth: "2.5rem" }}>
-        {formatTime(displayValue)}
-      </span>
+    <div className={styles.wrap}>
       <input
+        className={styles.range}
+        style={{ "--pct": pct } as React.CSSProperties}
         type="range"
         min={0}
         max={max}
         value={Math.min(displayValue, max)}
         disabled={disabled}
+        aria-label="seek"
         onChange={(e) => setDragValue(Number(e.target.value))}
         onMouseUp={commitSeek}
         onTouchEnd={commitSeek}
-        style={{ flex: 1, accentColor: "var(--accent)", opacity: disabled ? 0.4 : 1 }}
       />
-      <span style={{ fontSize: "0.8rem", color: "var(--text-dim)", minWidth: "2.5rem" }}>
-        {formatTime(durationMs)}
-      </span>
+      <div className={styles.times}>
+        <span>{formatTime(displayValue)}</span>
+        <span>{formatTime(durationMs)}</span>
+      </div>
     </div>
   );
 }

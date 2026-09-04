@@ -1,0 +1,69 @@
+.card {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-xl);
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+
+.body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, #2ee066, var(--spotify));
+  color: #04140a;
+  font-weight: 700;
+  font-size: 0.92rem;
+  box-shadow: var(--elev-1), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform var(--motion-fast) var(--ease-standard),
+    filter var(--motion-fast) var(--ease-standard);
+}
+
+.button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: currentColor;
+}
+
+.button:hover {
+  filter: brightness(1.05);
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+/* Loading placeholder while the session status resolves. */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--space-lg);
+  color: var(--text-mute);
+  font-size: 0.85rem;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dhun-pulse 1.2s ease infinite;
+}
