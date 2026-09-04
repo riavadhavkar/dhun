@@ -40,7 +40,7 @@ async function refreshAccessToken(token: JWTWithSpotify): Promise<JWTWithSpotify
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
     };
   } catch (error) {
-    console.error("Failed to refresh Spotify access token", error);
+    console.error("failed to refresh spotify access token", error);
     return { ...token, error: "RefreshAccessTokenError" };
   }
 }
@@ -61,6 +61,12 @@ export const authOptions: NextAuthOptions = {
       authorization: `https://accounts.spotify.com/authorize?scope=${SPOTIFY_SCOPES}`,
     }),
   ],
+  // Keep sign-in and OAuth errors inside the app (handled by <SpotifyConnect>)
+  // rather than NextAuth's default standalone pages.
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   callbacks: {
     async jwt({ token, account }) {
       // Initial sign-in

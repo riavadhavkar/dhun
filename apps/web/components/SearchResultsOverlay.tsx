@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 import type { TrackSearchResult } from "@/lib/types";
+
+import styles from "./SearchResultsOverlay.module.css";
 
 interface SearchResultsOverlayProps {
   results: TrackSearchResult[];
@@ -13,69 +16,80 @@ interface SearchResultsOverlayProps {
 }
 
 export function SearchResultsOverlay({ results, isFetching, error, onSelect }: SearchResultsOverlayProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Reset the highlight whenever the result set changes.
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [results]);
+
+  // Arrow-key navigation over the results, scoped to when the list has focus
+  // within it (keeps the search input's own caret keys working).
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (results.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      onSelect(results[activeIndex]);
+    }
+  };
+
+  useEffect(() => {
+    const el = listRef.current?.children[activeIndex] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-md)",
-        marginTop: "var(--space-sm)",
-        overflow: "hidden",
-      }}
-    >
-      {isFetching && (
-        <p style={{ color: "var(--text-dim)", padding: "var(--space-md)", margin: 0 }}>Searching…</p>
-      )}
+    <div className={styles.overlay} onKeyDown={handleKeyDown}>
+      {isFetching && <p className={styles.note}>searching…</p>}
       {error && (
-        <p style={{ color: "#f87171", padding: "var(--space-md)", margin: 0 }}>
-          Couldn&apos;t reach the search service. Is the backend running?
+        <p className={styles.noteError}>
+          couldn&apos;t reach the search service. is the backend running?
         </p>
       )}
       {!isFetching && !error && results.length === 0 && (
-        <p style={{ color: "var(--text-dim)", padding: "var(--space-md)", margin: 0 }}>No results.</p>
+        <p className={styles.note}>no results.</p>
       )}
 
       <ul
+        ref={listRef}
+        className={styles.list}
         aria-live="polite"
-        style={{ listStyle: "none", padding: 0, margin: 0, maxHeight: "50vh", overflowY: "auto" }}
+        aria-label={
+          results.length > 0 ? `${results.length} results` : undefined
+        }
       >
-        {results.map((track) => (
-          <li key={track.id}>
+        {results.map((track, i) => (
+          // `layout="position"` on the whole row so that when results reorder,
+          // the thumbnail and the title/artist glide to their new spot together
+          // — the thumbnail's own layoutId used to animate on its own while the
+          // text snapped.
+          <motion.li key={track.id} layout="position">
             <button
+              className={`${styles.row} ${i === activeIndex ? styles.rowActive : ""}`}
               onClick={() => onSelect(track)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-sm)",
-                width: "100%",
-                padding: "var(--space-sm)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                color: "var(--text)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--border)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={() => setActiveIndex(i)}
             >
-              {/* Shares layoutId with RecordPlayer's art image — this is the
-                  flight animation's source element. */}
-              <motion.div
-                layoutId={`album-art-${track.id}`}
-                style={{ width: 48, height: 48, borderRadius: "var(--radius-sm)", overflow: "hidden", flexShrink: 0 }}
-              >
+              {/* Shares layoutId with RecordPlayer's art — the flight source. */}
+              <motion.div className={styles.thumb} layoutId={`album-art-${track.id}`}>
                 {track.album_art ? (
                   <Image src={track.album_art} alt={track.album} width={48} height={48} />
                 ) : (
-                  <div style={{ width: 48, height: 48, background: "var(--vinyl-black)" }} />
+                  <div className={styles.thumbFallback} />
                 )}
               </motion.div>
-              <div>
-                <div>{track.name}</div>
-                <div style={{ color: "var(--text-dim)", fontSize: "0.875rem" }}>{track.artist}</div>
+              <div className={styles.meta}>
+                <div className={styles.name}>{track.name}</div>
+                <div className={styles.artist}>{track.artist}</div>
               </div>
             </button>
-          </li>
+          </motion.li>
         ))}
       </ul>
     </div>

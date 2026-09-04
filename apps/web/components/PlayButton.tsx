@@ -4,6 +4,8 @@ import { signIn } from "next-auth/react";
 
 import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 
+import styles from "./PlayButton.module.css";
+
 interface PlayButtonProps {
   spotifyTrackId: string;
   player: ReturnType<typeof useSpotifyPlayer>;
@@ -18,18 +20,18 @@ interface PlayButtonProps {
 export function PlayButton({ spotifyTrackId, player, started, onStarted }: PlayButtonProps) {
   if (!player.isAuthenticated) {
     return (
-      <button onClick={() => signIn("spotify")} style={buttonStyle}>
-        Connect Spotify to play
+      <button className={styles.connect} onClick={() => signIn("spotify")}>
+        connect spotify
       </button>
     );
   }
 
   if (player.error) {
-    return <p style={{ color: "#f87171" }}>{player.error}</p>;
+    return <p className={styles.status}>{player.error.toLowerCase()}</p>;
   }
 
   if (!player.isReady) {
-    return <p style={{ color: "var(--text-dim)" }}>Connecting to Spotify…</p>;
+    return <p className={styles.status}>connecting…</p>;
   }
 
   const handleClick = () => {
@@ -43,18 +45,18 @@ export function PlayButton({ spotifyTrackId, player, started, onStarted }: PlayB
   };
 
   return (
-    <button onClick={handleClick} style={buttonStyle}>
-      {player.isPaused ? "Play" : "Pause"}
+    <button
+      className={styles.play}
+      onClick={handleClick}
+      aria-label={player.isPaused ? "play" : "pause"}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        {player.isPaused ? (
+          <path d="M8 5v14l11-7z" />
+        ) : (
+          <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+        )}
+      </svg>
     </button>
   );
 }
-
-const buttonStyle: React.CSSProperties = {
-  padding: "0.6rem 1.25rem",
-  borderRadius: "999px",
-  border: "none",
-  background: "var(--accent)",
-  color: "#04140a",
-  fontWeight: 600,
-  cursor: "pointer",
-};

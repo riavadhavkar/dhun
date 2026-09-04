@@ -1,0 +1,310 @@
+.stage {
+  --rp-size: clamp(150px, min(32vh, 42vw), 260px);
+  --rp-container: calc(var(--rp-size) * 1.3);
+  --rp-art: calc(var(--rp-size) * 0.52);
+  --rp-inset: calc((var(--rp-size) - var(--rp-art)) / 2);
+
+  position: relative;
+  width: var(--rp-container);
+  max-width: 100%;
+  height: calc(var(--rp-container) * 0.95);
+  margin: 0 auto;
+  isolation: isolate;
+}
+
+@media (max-width: 768px) {
+  .stage {
+    --rp-size: min(64vw, 240px);
+  }
+}
+
+/* Soft strawberry-milk halo behind the record — swells a little while it spins. */
+.glow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--rp-size) * 1.7);
+  height: calc(var(--rp-size) * 1.7);
+  transform: translate(-50%, 26%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 178, 205, 0.5) 0%,
+    rgba(255, 205, 220, 0.22) 42%,
+    transparent 70%
+  );
+  opacity: 0.45;
+  filter: blur(10px);
+  transition: opacity 600ms var(--ease-standard);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glowOn {
+  opacity: 1;
+}
+
+/* The record: a soft cocoa-plum vinyl disc. Body gradient + a top-left sheen,
+   grooves and a rotating specular sweep layered on via pseudo-elements. */
+.disc {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--rp-size);
+  height: var(--rp-size);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.18) 0%, transparent 36%),
+    radial-gradient(circle at 50% 50%, #b7a0ac 0%, #8f7583 56%, #6a5361 100%);
+  box-shadow:
+    0 22px 44px rgba(150, 110, 110, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 2px 6px rgba(255, 255, 255, 0.22),
+    inset 0 0 54px rgba(60, 40, 55, 0.34);
+  animation: dhun-spin var(--platter-spin) linear infinite;
+  z-index: 1;
+}
+
+/* When reduced motion turns on, the disc should freeze exactly where it is —
+   the component sets `animation-play-state: paused`. The global reduced-motion
+   rule squashes `animation-duration` to 0.001ms, which would fast-forward the
+   frozen playhead to 0deg (looks like a reset), so keep the real duration on
+   the disc specifically. */
+:global(:root[data-reduced-motion="true"]) .disc {
+  animation-duration: var(--platter-spin) !important;
+  /* also restore the iteration count — the global rule forces it to 1, which
+     (once playback is past one rotation) clamps the paused animation to its
+     end frame, i.e. 360deg ≡ 0deg, so it looked like a reset to upright. */
+  animation-iteration-count: infinite !important;
+}
+
+/* Kept in this module (not globals.css) so CSS Modules scopes the keyframe
+   name to match the scoped `animation:` reference above. */
+@keyframes dhun-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rotating specular sweep — two soft light arcs. Lives inside .disc, so it
+   turns with the record: the signature "light sliding across vinyl" look. */
+.disc::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.085) 22deg,
+    transparent 58deg,
+    transparent 180deg,
+    rgba(255, 255, 255, 0.055) 202deg,
+    transparent 236deg,
+    transparent 360deg
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Fine concentric grooves + an edge vignette so it reads as pressed vinyl. */
+.disc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.06) 0px,
+      rgba(255, 255, 255, 0.06) 0.5px,
+      transparent 1.5px,
+      transparent 4px
+    ),
+    radial-gradient(circle, transparent 70%, rgba(90, 60, 80, 0.24) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Album cover pressed in as the record label. */
+.label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--rp-art);
+  height: var(--rp-art);
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 0 0 4px rgba(255, 255, 255, 0.12),
+    0 6px 16px rgba(120, 90, 90, 0.35),
+    inset 0 0 14px rgba(0, 0, 0, 0.28);
+  z-index: 2;
+}
+
+.labelArt {
+  background: var(--surface);
+}
+
+.labelFallback {
+  background: radial-gradient(circle at 42% 34%, #ffd7e4, #f0a1ba);
+}
+
+.labelArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0;
+  color: rgba(60, 40, 54, 0.5);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Empty disc — no record loaded yet. */
+.emptyMark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0;
+  font-size: calc(var(--rp-size) * 0.14);
+  color: rgba(60, 40, 54, 0.5);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+
+/* Metal spindle pin at the centre. */
+.spindle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--rp-size) * 0.035);
+  height: calc(var(--rp-size) * 0.035);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #dcdce2 0%, #8a8a92 58%, #45454c 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), inset 0 0 2px rgba(0, 0, 0, 0.4);
+  z-index: 3;
+}
+
+/* Flight layer — a sibling of the disc, never a descendant, so Framer's
+   layout projection is never fighting a rotating ancestor. */
+.flight {
+  position: absolute;
+  left: var(--rp-inset);
+  bottom: var(--rp-inset);
+  width: var(--rp-art);
+  height: var(--rp-art);
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.flight img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Tonearm — a slim chrome tube pivoting from a weighted base at the top-right
+   of the stage. Parked clear of the platter when lifted; swings the headshell
+   in over the platter edge when lowered. */
+.tonearm {
+  position: absolute;
+  top: calc(var(--rp-container) * 0.04);
+  right: calc(var(--rp-container) * 0.06);
+  width: calc(var(--rp-size) * 0.028);
+  height: calc(var(--rp-size) * 0.82);
+  transform-origin: top center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.tonearmTube {
+  position: absolute;
+  top: calc(var(--rp-size) * 0.05);
+  bottom: calc(var(--rp-size) * 0.06);
+  left: 0;
+  right: 0;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    #8a7f86 0%,
+    #cfc6cd 30%,
+    #f4eef2 50%,
+    #c0b6bd 70%,
+    #8a7f86 100%
+  );
+  box-shadow: 1px 2px 5px rgba(120, 90, 90, 0.35);
+}
+
+/* Weighted pivot base + counterweight nub behind it. */
+.tonearmPivot {
+  position: absolute;
+  top: calc(var(--rp-size) * -0.05);
+  left: 50%;
+  width: calc(var(--rp-size) * 0.14);
+  height: calc(var(--rp-size) * 0.14);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, #f0eaee 0%, #b8aeb5 45%, #6b626a 100%);
+  box-shadow: 0 4px 12px rgba(120, 90, 90, 0.35), inset 0 0 3px rgba(0, 0, 0, 0.25);
+}
+
+.tonearmPivot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26%;
+  height: 26%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #6b626a;
+}
+
+/* Angled headshell / cartridge at the business end. */
+.tonearmHead {
+  position: absolute;
+  bottom: calc(var(--rp-size) * -0.03);
+  left: 50%;
+  width: calc(var(--rp-size) * 0.075);
+  height: calc(var(--rp-size) * 0.11);
+  transform: translateX(-58%) rotate(14deg);
+  transform-origin: top center;
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(180deg, #6b5560 0%, #4a3a44 70%, #3a2c34 100%);
+  box-shadow: 0 3px 7px rgba(120, 90, 90, 0.4);
+}
+
+/* The stylus tip. */
+.tonearmHead::after {
+  content: "";
+  position: absolute;
+  bottom: calc(var(--rp-size) * -0.02);
+  left: 50%;
+  width: 2px;
+  height: calc(var(--rp-size) * 0.03);
+  transform: translateX(-50%);
+  background: var(--accent-deep);
+}

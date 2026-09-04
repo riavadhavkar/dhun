@@ -118,8 +118,8 @@ class TranslationService:
             except anthropic.APIError as exc:
                 message_text = str(exc)
                 if any(marker in message_text for marker in NON_RETRYABLE_MARKERS):
-                    raise TranslationError(f"Anthropic API error: {exc}") from exc
-                last_error = f"Anthropic API error: {exc}"
+                    raise TranslationError(f"anthropic api error: {exc}") from exc
+                last_error = f"anthropic api error: {exc}"
                 continue
 
             raw = _strip_code_fence(message.content[0].text.strip())
@@ -133,9 +133,9 @@ class TranslationService:
                 if message.stop_reason == "max_tokens":
                     last_error = f"response truncated at {MAX_OUTPUT_TOKENS} output tokens"
                 else:
-                    last_error = f"model did not return valid JSON (stop_reason={message.stop_reason})"
+                    last_error = f"model did not return valid json (stop_reason={message.stop_reason})"
                 logger.warning(
-                    "translate_lines chunk %s: JSON parse failed on attempt %d/%d (%s). Raw response (first 500 chars): %r",
+                    "translate_lines chunk %s: json parse failed on attempt %d/%d (%s). raw response (first 500 chars): %r",
                     chunk_label,
                     attempt + 1,
                     MAX_ATTEMPTS,
@@ -150,7 +150,7 @@ class TranslationService:
 
             last_error = f"expected {len(lines)} {{pronunciation, translation}} objects, got malformed output"
             logger.warning(
-                "translate_lines chunk %s: shape mismatch on attempt %d/%d. Raw response (first 500 chars): %r",
+                "translate_lines chunk %s: shape mismatch on attempt %d/%d. raw response (first 500 chars): %r",
                 chunk_label,
                 attempt + 1,
                 MAX_ATTEMPTS,
@@ -158,11 +158,11 @@ class TranslationService:
             )
 
         raise TranslationError(
-            "Translating this song's lyrics didn't work after several attempts. This isn't about "
+            "translating this song's lyrics didn't work after several attempts. this isn't about "
             "missing lyrics — the lyrics were found fine; the translation step itself failed to "
-            "produce a usable result. This can happen with songs that have unusual lyric formatting "
-            "(heavy repetition, non-lyrical markers like [Instrumental], mixed-language lines) or "
-            "from a temporary hiccup with the translation service. Try again, or try a different "
+            "produce a usable result. this can happen with songs that have unusual lyric formatting "
+            "(heavy repetition, non-lyrical markers like [instrumental], mixed-language lines) or "
+            "from a temporary hiccup with the translation service. try again, or try a different "
             f"target language. (debug: chunk {chunk_label}, {last_error})"
         )
 

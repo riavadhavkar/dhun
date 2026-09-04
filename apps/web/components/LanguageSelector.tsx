@@ -2,6 +2,8 @@
 
 import { useLanguages } from "@/hooks/useLanguages";
 
+import styles from "./LanguageSelector.module.css";
+
 interface LanguageSelectorProps {
   value: string;
   onChange: (code: string) => void;
@@ -12,15 +14,10 @@ export function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
 
   return (
     <select
+      className={styles.select}
+      aria-label="translation language"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      style={{
-        padding: "0.5rem 0.75rem",
-        borderRadius: "8px",
-        border: "1px solid var(--border)",
-        background: "var(--surface)",
-        color: "var(--text)",
-      }}
     >
       {languages?.map((lang) => (
         <option key={lang.code} value={lang.code}>

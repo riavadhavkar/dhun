@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { findActiveLineIndex } from "@/lib/lyrics";
 import type { LyricLine } from "@/lib/types";
 
+import styles from "./LyricsView.module.css";
+
 interface LyricsViewProps {
   lines: LyricLine[];
   positionMs: number;
@@ -20,44 +22,29 @@ export function LyricsView({ lines, positionMs, onSeek }: LyricsViewProps) {
   }, [activeIndex]);
 
   return (
-    <div style={{ maxHeight: "60vh", overflowY: "auto", padding: "1rem 0" }}>
+    <div className={styles.scroll}>
       {lines.map((line, i) => {
-        const isActive = i === activeIndex;
-        const isPast = i < activeIndex;
+        const state =
+          i === activeIndex ? styles.active : i < activeIndex ? styles.past : styles.upcoming;
         return (
           <div
             key={line.start_ms}
             ref={(el) => {
               lineRefs.current[i] = el;
             }}
+            className={`${styles.line} ${state}`}
             onClick={() => onSeek(line.start_ms)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") onSeek(line.start_ms);
             }}
-            style={{
-              padding: "0.6rem 0",
-              opacity: isActive ? 1 : isPast ? 0.35 : 0.55,
-              transform: isActive ? "scale(1.03)" : "scale(1)",
-              transformOrigin: "left",
-              transition: "opacity 150ms ease, transform 150ms ease",
-              cursor: "pointer",
-            }}
           >
-            <div
-              style={{
-                fontSize: "1.15rem",
-                fontWeight: isActive ? 700 : 400,
-                color: isActive ? "var(--accent)" : "var(--text)",
-              }}
-            >
-              {line.original}
-            </div>
-            <div style={{ fontSize: "0.9rem", fontStyle: "italic", color: "var(--text-dim)" }}>
-              {line.pronunciation}
-            </div>
-            <div style={{ fontSize: "0.95rem", color: "var(--text-dim)" }}>{line.translated}</div>
+            <div className={styles.original}>{line.original}</div>
+            {line.pronunciation && (
+              <div className={styles.pronunciation}>{line.pronunciation}</div>
+            )}
+            {line.translated && <div className={styles.translated}>{line.translated}</div>}
           </div>
         );
       })}

@@ -1,0 +1,64 @@
+/* MD Vinyl-style transport: no panel chrome — title, a hairline scrubber, and
+   a minimal prev / play / next row floating under the record. */
+.controls {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+}
+
+.meta {
+  width: 100%;
+  min-width: 0;
+}
+
+.title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist {
+  margin-top: 2px;
+  font-size: 0.83rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  min-height: 3.4rem;
+}
+
+.skip {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  color: var(--text-dim);
+  transition: color var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard);
+}
+
+.skip:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.skip svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
