@@ -35,7 +35,7 @@ On first run, apply database migrations:
 docker compose exec api alembic upgrade head
 ```
 
-## Structure
+## structure
 
 ```
 apps/
