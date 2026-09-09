@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.languages import LANGUAGE_NAMES_BY_CODE, SUPPORTED_LANGUAGES
+from app.limiter import limiter
 from app.models import Song, Translation
 from app.schemas import (
     Language,
@@ -88,7 +89,9 @@ async def get_original_lyrics(
 
 
 @router.get("/songs/{spotify_track_id}/translation", response_model=TranslationResponse)
+@limiter.limit("20/minute")
 async def get_translation(
+    request: Request,
     spotify_track_id: str,
     lang: str = Query(default="en"),
     db: Session = Depends(get_db),
