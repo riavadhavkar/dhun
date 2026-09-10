@@ -35,9 +35,9 @@ export const metadata: Metadata = {
       "search a song, drop the needle, and follow the lyrics in your language.",
     images: ["/console.jpg"],
   },
-  icons: {
-    icon: "/console.jpg",
-  },
+  // Falls through to the file-based app/favicon.ico convention — a proper
+  // small icon instead of loading the (large, decorative) console art as
+  // the browser-tab favicon.
 };
 
 export const viewport: Viewport = {

@@ -11,6 +11,8 @@ import re
 
 import httpx
 
+from app.services.retry import request_with_retry
+
 API_BASE = "https://lrclib.net/api"
 
 _LRC_LINE_RE = re.compile(r"^\[(\d+):(\d+(?:\.\d+)?)\](.*)$")
@@ -71,7 +73,7 @@ class LrclibClient:
         if duration_ms:
             params["duration"] = round(duration_ms / 1000)
 
-        resp = await client.get(f"{API_BASE}/get", params=params)
+        resp = await request_with_retry(client, "GET", f"{API_BASE}/get", params=params)
         if resp.status_code == 404:
             return None
         resp.raise_for_status()
@@ -79,7 +81,9 @@ class LrclibClient:
         return resp.json().get("syncedLyrics") or None
 
     async def _search_fallback(self, client: httpx.AsyncClient, artist: str, title: str) -> str | None:
-        resp = await client.get(f"{API_BASE}/search", params={"artist_name": artist, "track_name": title})
+        resp = await request_with_retry(
+            client, "GET", f"{API_BASE}/search", params={"artist_name": artist, "track_name": title}
+        )
         resp.raise_for_status()
         results = resp.json()
 

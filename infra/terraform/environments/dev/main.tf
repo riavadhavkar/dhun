@@ -83,6 +83,13 @@ module "api_service" {
   health_check_path      = "/health"
   secrets_arn            = module.secrets.secret_arn
   secret_keys            = module.secrets.secret_keys
+  environment = {
+    # The API now validates CORS origins from this env var (see
+    # apps/api/app/config.py) instead of hardcoding localhost — without it
+    # the deployed API defaults to the local-dev origins and the deployed
+    # frontend's requests get rejected by CORS.
+    CORS_ALLOWED_ORIGINS = "http://${aws_lb.this.dns_name}"
+  }
 }
 
 module "web_service" {

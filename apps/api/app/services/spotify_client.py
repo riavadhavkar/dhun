@@ -9,6 +9,7 @@ import time
 import httpx
 
 from app.config import get_settings
+from app.services.retry import request_with_retry
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 API_BASE = "https://api.spotify.com/v1"
@@ -24,7 +25,9 @@ class SpotifyClient:
             return self._token
 
         settings = get_settings()
-        resp = await client.post(
+        resp = await request_with_retry(
+            client,
+            "POST",
             TOKEN_URL,
             data={"grant_type": "client_credentials"},
             auth=(settings.spotify_client_id, settings.spotify_client_secret),
@@ -39,7 +42,9 @@ class SpotifyClient:
     async def search_tracks(self, query: str, limit: int = 10) -> list[dict]:
         async with httpx.AsyncClient(timeout=10) as client:
             token = await self._get_token(client)
-            resp = await client.get(
+            resp = await request_with_retry(
+                client,
+                "GET",
                 f"{API_BASE}/search",
                 params={"q": query, "type": "track", "limit": limit},
                 headers={"Authorization": f"Bearer {token}"},
@@ -62,7 +67,9 @@ class SpotifyClient:
     async def get_track(self, track_id: str) -> dict:
         async with httpx.AsyncClient(timeout=10) as client:
             token = await self._get_token(client)
-            resp = await client.get(
+            resp = await request_with_retry(
+                client,
+                "GET",
                 f"{API_BASE}/tracks/{track_id}",
                 headers={"Authorization": f"Bearer {token}"},
             )
