@@ -458,9 +458,11 @@ button {
 }
 
 .dhun-lyrics-status {
+  display: flex;
+  justify-content: center;
   min-height: 2.1rem;
-  margin-top: var(--space-md);
-  margin-bottom: var(--space-sm);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-md);
 }
 
 /* dhun-spin lives in RecordPlayer.module.css — CSS Modules scopes the
