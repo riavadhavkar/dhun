@@ -127,6 +127,15 @@ export function useSpotifyPlayer() {
   const playTrack = useCallback(
     async (spotifyTrackId: string, positionMs?: number) => {
       if (!state.deviceId || !accessTokenRef.current) return;
+      // Optimistic: `isPaused` otherwise only updates once the SDK's own
+      // `player_state_changed` fires or the next poll tick lands, both of
+      // which wait on Spotify's Connect backend to propagate "this device
+      // is now playing" back to us — a round trip that visibly lags behind
+      // the audio actually starting (worst on the first play of a session),
+      // leaving the record frozen for a beat even though the song is
+      // audible. We just told Spotify to play, so reflect that immediately;
+      // the next poll/event corrects it if it didn't actually take.
+      setState((s) => ({ ...s, isPaused: false }));
       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${state.deviceId}`, {
         method: "PUT",
         headers: {
@@ -142,7 +151,11 @@ export function useSpotifyPlayer() {
     [state.deviceId]
   );
 
-  const togglePlay = useCallback(() => playerRef.current?.togglePlay(), []);
+  const togglePlay = useCallback(() => {
+    // Same optimistic-update reasoning as playTrack above.
+    setState((s) => ({ ...s, isPaused: !s.isPaused }));
+    playerRef.current?.togglePlay();
+  }, []);
   const seek = useCallback((ms: number) => playerRef.current?.seek(ms), []);
 
   // Must be called synchronously inside a user-gesture click handler, before
