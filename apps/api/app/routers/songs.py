@@ -124,7 +124,7 @@ async def get_translation(
 
         translation.translated_lines = translated_texts
         translation.transliterated_lines = transliterated_texts
-        translation.model_used = "claude-sonnet-4-5"
+        translation.model_used = "claude-sonnet-5-5"
         try:
             db.commit()
         except IntegrityError:

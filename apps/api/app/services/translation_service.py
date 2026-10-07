@@ -27,7 +27,7 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-5"
+MODEL = "claude-sonnet-5-5"
 MAX_ATTEMPTS = 3
 CHUNK_SIZE = 20
 # Each line now returns two fields (pronunciation + translation) instead of
